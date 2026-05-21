@@ -601,6 +601,50 @@ const server = http.createServer(async (req, res) => {
       res.end(resp.result?.result?.value || '{}');
     }
 
+    // POST /cookies/set - 设置 Cookie（body 为 JSON字段）
+    else if (pathname === '/cookies/set') {
+      if (req.method !== 'POST') {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ error: '请使用 POST 方法' }));
+        return;
+      }
+      const body = await readBody(req);
+      let cookie;
+      try {
+        cookie = JSON.parse(body);
+      } catch {
+        res.statusCode = 400;
+        res.end(JSON.stringify({ error: 'body 必须是 JSON' }));
+        return;
+      }
+      // 使用任意一个已有的 session 或 browser session
+      const sid = sessions.values().next().value || null;
+      const resp = await sendCDP('Network.setCookie', {
+        name: cookie.name,
+        value: cookie.value,
+        domain: cookie.domain,
+        path: cookie.path || '/',
+        expires: cookie.expires || undefined,
+        secure: cookie.secure || false,
+        httpOnly: cookie.httpOnly || false,
+        sameSite: cookie.sameSite || undefined,
+      }, sid);
+      res.end(JSON.stringify({
+        success: resp.result?.success || false,
+        result: resp.result,
+      }));
+    }
+
+    // GET /cookies/get - 获取所有 Cookie
+    else if (pathname === '/cookies/get') {
+      const sid = sessions.values().next().value || null;
+      const resp = await sendCDP('Network.getAllCookies', {}, sid);
+      res.end(JSON.stringify({
+        cookies: resp.result?.cookies || [],
+        count: (resp.result?.cookies || []).length,
+      }));
+    }
+
     else {
       res.statusCode = 404;
       res.end(JSON.stringify({
@@ -617,6 +661,8 @@ const server = http.createServer(async (req, res) => {
           '/click?target=': 'POST body=CSS选择器 - 点击元素',
           '/scroll?target=&y=&direction=': 'GET - 滚动页面',
           '/screenshot?target=&file=': 'GET - 截图',
+          '/cookies/set': 'POST body=JSON - 设置 Cookie（name,value,domain,path,secure,httpOnly）',
+          '/cookies/get': 'GET - 获取所有 Cookie',
         },
       }));
     }
