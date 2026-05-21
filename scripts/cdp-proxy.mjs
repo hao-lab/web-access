@@ -99,6 +99,19 @@ async function discoverChromePort() {
   return null;
 }
 
+async function resolveFallbackWsPath(port) {
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}/json/version`);
+    const data = await res.json();
+    const wsUrl = data.webSocketDebuggerUrl;
+    if (wsUrl) {
+      const url = new URL(wsUrl);
+      return url.pathname + url.search;
+    }
+  } catch {}
+  return null;
+}
+
 function getWebSocketUrl(port, wsPath) {
   if (wsPath) return `ws://127.0.0.1:${port}${wsPath}`;
   return `ws://127.0.0.1:${port}/devtools/browser`;
@@ -125,6 +138,10 @@ async function connect() {
     }
     chromePort = discovered.port;
     chromeWsPath = discovered.wsPath;
+    if (!chromeWsPath) {
+      const resolved = await resolveFallbackWsPath(chromePort);
+      if (resolved) chromeWsPath = resolved;
+    }
   }
 
   const wsUrl = getWebSocketUrl(chromePort, chromeWsPath);
