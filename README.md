@@ -29,6 +29,8 @@ AI Agent 原本的联网能力（WebSearch、WebFetch）缺少调度策略和浏
 
 > 推荐必读：[Web Access：一个 Skill，拉满 Agent 联网和浏览器能力](https://mp.weixin.qq.com/s/rps5YVB6TchT9npAaIWKCw) ，完整介绍了 Web-Access Skill 的开发细节与 Agent Skill 设计哲学，帮助你也能写出类似通用、高上限的 Skill
 
+> 本 Fork（`hao-lab/web-access`）专为 **无头服务器环境** 优化：支持轻量 headless_shell、CDP 精确连接回退、一键启动脚本。原版请见 [eze-is/web-access](https://github.com/eze-is/web-access)。
+
 ---
 
 ## v2.5.2 能力
@@ -79,6 +81,47 @@ AI Agent 原本的联网能力（WebSearch、WebFetch）缺少调度策略和浏
 - **Jina 积极推荐** — 明确鼓励在合适场景主动使用 Jina 节省 token
 - **子 Agent prompt 指引优化** — 明确加载写法，增加避免动词暗示执行方式的说明
 </details>
+
+## 安装
+
+## 无头服务器快速开始（本 Fork）
+
+本 fork 专为无 GUI 的服务器环境设计，默认使用 Playwright 的 **headless_shell**（Chromium 精简版，更轻量）。
+
+### 1. 启动浏览器
+
+```bash
+./scripts/start-headless.sh
+```
+
+默认使用 Playwright 缓存中的 headless_shell。可通过环境变量自定义：
+
+```bash
+export HEADLESS_BROWSER=/path/to/chrome-headless-shell
+export CDP_PORT=9222
+export USER_DATA_DIR=/tmp/my-profile
+./scripts/start-headless.sh
+```
+
+### 2. 启动 CDP Proxy
+
+```bash
+node scripts/cdp-proxy.mjs
+```
+
+Proxy 会自动检测 headless_shell 的远程调试端口并建立连接。
+
+### 与原版的区别
+
+| 项目 | 原版 eze-is/web-access | 本 fork |
+|---|---|---|
+| 目标环境 | 用户桌面浏览器 | 无头服务器 |
+| 浏览器管理 | 不管理（连接已有 Chrome） | 自带启动脚本，支持定制 |
+| CDP 连接 | 依赖 `DevToolsActivePort` 文件 | 回退到 `/json/version` 获取精确 WS URL |
+| 默认浏览器 | 用户 Chrome/Edge | Playwright headless_shell |
+| 并行能力 | 多 tab HTTP API | 协议层并行（sessionId 隔离） |
+
+---
 
 ## 安装
 
